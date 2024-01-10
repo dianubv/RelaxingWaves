@@ -3,23 +3,25 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 
-import { light } from './scripts/light.js';
+import { light, ambientLight } from './scripts/light.js';
 import { camera } from './scripts/camera.js';
 import { ocean, updateOcean, waveSettings, minAmplitude, 
-    clock, boat, 
+    clock, boat,
     speechBubble, updateSpeechBubbleText} from './scripts/shapes.js';
 
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+// import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 
-// Setup the scene
+// Setup the scene 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xaaccff );
 
 const fogColor = 0xaaccff;
-const fogDensity = 0.0007;
+const fogDensity = 0.0017;
 scene.fog = new THREE.FogExp2(fogColor, fogDensity);
 
+/* 
+// GUI (for developping) 
 const gui = new GUI();
 const fogControls = {
     fogDensity: fogDensity
@@ -29,6 +31,7 @@ const fogControls = {
 gui.add(fogControls, 'fogDensity', 0, 0.002).name('Fog Density').onChange(function (newDensity) {
     scene.fog.density = newDensity;
 });
+ */
 
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({
@@ -42,12 +45,13 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio( window.devicePixelRatio );
 
 const controls = new OrbitControls(camera, canvas);
-
-// Create AxesHelper (the size can be adjusted as needed)
+/* 
+// AxesHelper (for debugging) 
 const axesHelper = new THREE.AxesHelper(500); // 500 is the size of the helper
 scene.add(axesHelper);
+ */
 
-// Handle the window resize event
+// Handle the window resize event 
 window.addEventListener('resize', () => {
     // Update the camera
     camera.aspect =  window.innerWidth / window.innerHeight;
@@ -63,20 +67,17 @@ window.addEventListener('resize', () => {
 
 
 
-// Add lights
-/* const light = createDirectionalLight(); */
+// Add lights 
+
 scene.add(light);
 
+scene.add(ambientLight);
 
 
-
-
-
-
-// Add shapes
+// Add shapes 
 scene.add(ocean);
 
-// Add wave changes
+// Add wave changes 
 let spaceBarPressTimer;
 let decreaseAmplitudeInterval;
 
@@ -85,8 +86,7 @@ const waveControls = {
 };
 
 
-// Boat
-/* scene.add(platform); */
+// Add boat 
 
 function getWaveHeightAtPosition(x, z) {
     // Calculate the wave height at position (x, z)
@@ -99,7 +99,8 @@ function getWaveHeightAtPosition(x, z) {
 
 scene.add(boat);
 
-// Add speech bubble
+
+// Add speech bubble 
 scene.add(speechBubble);
 
 function updateSpeechBubble() {
@@ -110,42 +111,155 @@ function updateSpeechBubble() {
     // Update the text based on wave amplitude
     const currentAmplitude = waveSettings.getAmplitude();
     if (currentAmplitude > 75) {
-        updateSpeechBubbleText('Owh too many waves! Keep your breathing in tune with the waves \n ');
+        updateSpeechBubbleText('Owhh too many waves! Keep your breathing in tune with the waves \n ');
+        setRobotExpression("Surprised");
+        ambientLight.intensity = 0;
     } else if (currentAmplitude < 20) {
         updateSpeechBubbleText("It's better, now you're calm :)");
+        setRobotExpression("Normal");
+        ambientLight.intensity = 1;
+    } else if (currentAmplitude < 45) {
+        updateSpeechBubbleText("You have too many power ! You can also control my emotions with the 'e' key \n and my action with the 'a' key");
+        setRobotExpression("Angry");
+        ambientLight.intensity = 0.5;
     } else {
-        updateSpeechBubbleText('You have the power\nto control the waves! \n Use the space bar to change the wave amplitude.');
+        updateSpeechBubbleText('You have the power to control the waves! \n Use the space bar to change the wave amplitude.');
+        ambientLight.intensity = 0.3;
     }
 }
 
 
-// Add the robot
+// Add Robot 
+
+let robot;
+let face;
+let animation = {};
+
 function loadRobotModel() {
-    const loader = new GLTFLoader();
-
-    loader.load('./RobotExpressive.glb', function(gltf) {
-        const robot = gltf.scene;
-        robot.scale.set(0.5, 0.5, 0.5); 
-        robot.position.set(0, 30, 0); 
-
-        const helper = new THREE.BoxHelper(robot, 0xff0000);
+    const loaderGLTF = new GLTFLoader();
+    
+    loaderGLTF.load('./RobotExpressive.glb', function(gltf) {
+        robot = gltf.scene;
+        robot.scale.set(10, 10, 10); 
+        robot.position.copy(boat.position);
+        face = robot.getObjectByName('Head_4');
+        
         scene.add(robot);
+        /* // Add animations (not working for now)
+        animations = gltf.animations.reduce((acc, anim) => {
+            acc[anim.name] = anim;
+            return acc;
+        }, {});
+        
+        setupRobotAnimations();
+ */
 
-        // If there are animations, you can access them with gltf.animations
-        // Example: createAnimationMixer(robot, gltf.animations);
     }, undefined, function(error) {
         console.error(error);
     });
 }
+
 loadRobotModel();
 
-let mixer;
 
-function createAnimationMixer(robot, animations) {
+function updateRobot(robot){
+    if (robot) { 
+        robot.position.copy(boat.position);
+        robot.position.y += 10;
+    }
+}
+
+
+
+let mixer;
+let actions = {};
+
+// Add animations (not working for now) 
+function setupAnimationAnimations() {
     mixer = new THREE.AnimationMixer(robot);
 
-    const action = mixer.clipAction(animations[0]); 
-    action.play();
+    for (const [name, animation] of Object.entries(animations)) {
+        actions[name] = mixer.clipAction(animation);
+    }
+}
+
+// Robot's expressions 
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'e' || event.key === 'E') {
+        changeRobotExpression();
+    }
+});
+let currentExpressionIndex = 0; // Keep track of the current expression
+
+function setRobotExpression(expressionName) {
+    if (!face || !face.morphTargetDictionary) {
+        console.log("Face not defined or model not loaded");
+        return;
+    }
+
+    // Reset all morph target influences
+    face.morphTargetInfluences.fill(0);
+
+    // Set the morph target influence for the specified expression
+    if (expressionName in face.morphTargetDictionary) {
+        const expressionIndex = face.morphTargetDictionary[expressionName];
+        face.morphTargetInfluences[expressionIndex] = 1;
+    } else {
+        console.log("Expression not found:", expressionName);
+    }
+}
+
+function changeRobotExpression() {
+    if (!face) {
+        console.log("Face not defined or model not loaded");
+        return;
+    }
+    if (!robot) return; 
+
+    const expressions = Object.keys(face.morphTargetDictionary);
+    currentExpressionIndex = (currentExpressionIndex + 1) % expressions.length;
+    
+    // Reset all morph target influences
+    for (let i = 0; i < expressions.length; i++) {
+        face.morphTargetInfluences[i] = 0;
+    }
+
+    // Set the morph target influence for the current expression
+    const expressionName = expressions[currentExpressionIndex];
+    const expressionIndex = face.morphTargetDictionary[expressionName];
+    face.morphTargetInfluences[expressionIndex] = 1;
+}
+
+
+
+// Robot's actions
+document.addEventListener('keydown', function(event) {
+    if (!mixer || !actions) return;
+
+    switch (event.key.toLowerCase()) {
+        case 'y': // 'Yes' animation
+            playAnimation('Yes');
+            break;
+        case 'n': // 'No' animation
+            playAnimation('No');
+            break;
+        case 'w': // 'Wave' animation
+            playAnimation('Wave');
+            break;
+        case 't': // 'ThumbsUp' animation
+            playAnimation('ThumbsUp');
+            break;
+        // Add other cases as needed ('Jump', 'Punch')
+    }
+});
+
+function playAnimation(name) {
+    if (name in actions) {
+        const action = actions[name];
+        action.reset().play();
+    } else {
+        console.log("Animation not found:", name);
+    }
 }
 
 
@@ -264,7 +378,7 @@ function animate() {
     if (mixer) {
         mixer.update(delta);
     }
-
+    updateRobot(robot);
     updateSpeechBubble();
 
     // Render the scene

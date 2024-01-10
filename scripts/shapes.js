@@ -1,15 +1,17 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
 
 // OCEAN : 
 
 // Texture
 let loader = new THREE.TextureLoader();
-const oceanTextureMap = loader.load('./scripts/ocean2.jpeg');
+const oceanTextureMap = loader.load('./textures/ocean2.jpeg');
 oceanTextureMap.wrapS = oceanTextureMap.wrapT = THREE.RepeatWrapping;
 oceanTextureMap.repeat.set( 5, 5 );
 oceanTextureMap.colorSpace = THREE.SRGBColorSpace;
 
-const oceanTextureDisplacement = loader.load('./scripts/ocean3.jpeg');
+const oceanTextureDisplacement = loader.load('./textures/ocean3.jpeg');
 oceanTextureDisplacement.wrapS = oceanTextureDisplacement.wrapT = THREE.RepeatWrapping;
 oceanTextureDisplacement.repeat.set( 5, 5 );
 
@@ -31,10 +33,10 @@ const ocean = new THREE.Mesh(geometry, material);
 const clock = new THREE.Clock();
 
 // Ocean movement
-let waveAmplitude = 35;
+let waveAmplitude = 45;
 let targetAmplitude = waveAmplitude; // New target amplitude
 const stepAmplitude = 5; // The step for amplitude changes
-const minAmplitude = 15;  // Minimum amplitude
+const minAmplitude = 10;  // Minimum amplitude
 const maxAmplitude = 100; // Maximum amplitude
 
 const waveSettings = {
@@ -96,9 +98,9 @@ const cylinderRadius = 7.5;
 const cylinderHeight = 150;
 const hullMaterial = new THREE.MeshPhongMaterial({ 
     color: 0x8B4513,
-    map: loader.load('./scripts/wood.webp'), 
+    map: loader.load('./textures/wood.webp'), 
 /*  //displacement map on the wood, not working for now
-    displacementMap: loader.load('./scripts/wood.webp'),
+    displacementMap: loader.load('./textures/wood.webp'),
     displacementScale: 1, */
 }); 
 
@@ -113,13 +115,13 @@ for (let i = 0; i < cylinderCount; i++) {
 
 // Mast 
 const mastGeometry = new THREE.BoxGeometry(5, 100, 5);
-const mastTexture = new THREE.TextureLoader().load('./scripts/wood.jpeg');
+const mastTexture = new THREE.TextureLoader().load('./textures/wood.jpeg');
 const mastMaterial = new THREE.MeshPhongMaterial({ 
     color: 0xfffffff,
     map : mastTexture,
 }); 
 const mast = new THREE.Mesh(mastGeometry, mastMaterial);
-mast.position.set(0, 45, 0); 
+mast.position.set(-30, 45, 0); 
 boat.add(mast);
 
 
@@ -197,4 +199,6 @@ speechBubble.position.set(0, 100, 0);
 speechBubble.visible = true;
 
 export { speechBubble, updateSpeechBubbleText };
+
+
 
