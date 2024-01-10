@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { light, ambientLight } from './scripts/light.js';
 import { camera } from './scripts/camera.js';
@@ -19,6 +23,12 @@ scene.background = new THREE.Color( 0xaaccff );
 const fogColor = 0xaaccff;
 const fogDensity = 0.0017;
 scene.fog = new THREE.FogExp2(fogColor, fogDensity);
+
+let textureEquirec = new THREE.TextureLoader().load( './textures/background.webp' );
+textureEquirec.mapping = THREE.EquirectangularReflectionMapping;
+textureEquirec.colorSpace = THREE.SRGBColorSpace;
+
+scene.background = textureEquirec;
 
 /* 
 // GUI (for developping) 
@@ -43,6 +53,15 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio( window.devicePixelRatio );
+
+// For the post-processing
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.80, 0.2, 1);
+composer.addPass(bloomPass);
+
 
 const controls = new OrbitControls(camera, canvas);
 /* 
@@ -118,9 +137,8 @@ function updateSpeechBubble() {
         updateSpeechBubbleText("It's better, now you're calm :)");
         setRobotExpression("Normal");
         ambientLight.intensity = 1;
-    } else if (currentAmplitude < 45) {
-        updateSpeechBubbleText("You have too many power ! You can also control my emotions with the 'e' key \n and my action with the 'a' key");
-        setRobotExpression("Angry");
+    } else if (currentAmplitude < 45) {  
+        updateSpeechBubbleText("You have too many power ! You can also control my emotions with the 'e' key");
         ambientLight.intensity = 0.5;
     } else {
         updateSpeechBubbleText('You have the power to control the waves! \n Use the space bar to change the wave amplitude.');
@@ -342,7 +360,7 @@ window.addEventListener('keydown', onKeyDown);
 window.addEventListener('keyup', onKeyUp);
 
 
-const someOffset = 15;
+const someOffset = 25;
 
 // Add event listeners
 function animate() {
@@ -382,7 +400,7 @@ function animate() {
     updateSpeechBubble();
 
     // Render the scene
-    renderer.render(scene, camera);
+    composer.render();
 }
 
 

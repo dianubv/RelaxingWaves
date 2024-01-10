@@ -19,7 +19,10 @@ const material = new THREE.MeshPhongMaterial({
     color: 0x0044ff, 
     map: oceanTextureMap,
     displacementMap: oceanTextureDisplacement,
-    displacementScale: 20,
+    displacementScale: 40,
+    specular: 0x111111, // Specular color of the material
+    shininess: 100,     // How shiny the material is
+    reflectivity: 0.5,  // Reflectivity strength 
 });
 
 // Geometry
@@ -86,7 +89,7 @@ export { ocean, updateOcean, waveSettings, minAmplitude  };
 const platformGeometry = new THREE.BoxGeometry(150, 15, 150); 
 const platformMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
 const platform = new THREE.Mesh(platformGeometry, platformMaterial);
-platform.position.set(0, 50, 0);
+platform.position.set(0, 0, 0);
 
 export { platform, clock, platformGeometry };
 
@@ -168,8 +171,8 @@ function createSpeechBubble() {
     // Text sprite creation
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = 1024;
-    canvas.height = 200;
+    canvas.width = 524;
+    canvas.height = 100;
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
     const sprite = new THREE.Sprite(spriteMaterial);
